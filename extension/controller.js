@@ -29,10 +29,17 @@
     async function recordAd(wallSeconds) {
       try {
         const rate = config.adPlaybackRate || 1;
-        const saved = Math.min(wallSeconds * rate, 180);
+        const saved = Math.max(0, Math.min(wallSeconds * rate, 180));
         const stats = await NS.storage.getStats();
         stats.count = (stats.count || 0) + 1;
-        stats.secondsSaved = (stats.secondsSaved || 0) + Math.max(0, saved);
+        stats.secondsSaved = (stats.secondsSaved || 0) + saved;
+        // Per-day bucket powers the dashboard charts + streaks.
+        if (NS.statsUtil) {
+          NS.statsUtil.bumpDaily(stats, NS.statsUtil.dateKey(new Date()), {
+            adCount: 1,
+            adSeconds: saved,
+          });
+        }
         await NS.storage.saveStats(stats);
       } catch (e) {
         /* stats are best-effort */

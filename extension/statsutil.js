@@ -89,6 +89,45 @@
     return streak;
   }
 
+  // Headline totals for the dashboard summary cards.
+  function summarize(stats) {
+    const round = (n) => Math.round(n || 0);
+    return {
+      ads: round(stats.count),
+      adMinutes: round((stats.secondsSaved || 0) / 60),
+      sponsorCount: round(stats.sponsorCount),
+      sponsorMinutes: round((stats.sponsorSecondsSaved || 0) / 60),
+      focusMinutes: round(stats.focusMinutes),
+      focusSessions: round(stats.focusSessions),
+    };
+  }
+
+  // CSV of a daily series (one row per day). Header + rows, no trailing newline.
+  function seriesToCsv(series) {
+    const cols = ["key", "adCount", "adSeconds", "sponsorCount", "sponsorSeconds", "focusMinutes"];
+    const header = ["date", "adCount", "adSeconds", "sponsorCount", "sponsorSeconds", "focusMinutes"].join(",");
+    const rows = (series || []).map((d) => cols.map((c) => d[c] != null ? d[c] : 0).join(","));
+    return [header].concat(rows).join("\n");
+  }
+
+  // Bar-chart geometry for inline SVG: maps values → {x,y,w,h} rects inside a
+  // width×height box. Heights scale to `max` (defaults to the largest value, or
+  // 1 so an all-zero series draws nothing rather than dividing by zero).
+  function barLayout(values, opts) {
+    opts = opts || {};
+    const width = opts.width || 100;
+    const height = opts.height || 100;
+    const gap = opts.gap != null ? opts.gap : 2;
+    const n = values.length;
+    if (!n) return [];
+    const max = opts.max != null ? opts.max : Math.max(1, ...values.map((v) => v || 0));
+    const barW = (width - gap * (n - 1)) / n;
+    return values.map((v, i) => {
+      const h = max > 0 ? ((v || 0) / max) * height : 0;
+      return { x: i * (barW + gap), y: height - h, w: barW, h: h };
+    });
+  }
+
   NS.statsUtil = {
     emptyDay,
     dateKey,
@@ -97,5 +136,8 @@
     buildDailySeries,
     dayHasActivity,
     computeStreak,
+    summarize,
+    seriesToCsv,
+    barLayout,
   };
 })();

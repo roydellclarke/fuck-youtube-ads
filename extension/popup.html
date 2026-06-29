@@ -105,6 +105,14 @@
       button.action:hover {
         background: #4a5ae8;
       }
+      button.action.secondary {
+        background: #25252f;
+        border: 1px solid #313140;
+        margin-top: 8px;
+      }
+      button.action.secondary:hover {
+        background: #2f2f3c;
+      }
       .saved {
         font-size: 11px;
         color: #4ccf7e;
@@ -243,6 +251,9 @@
 
     <button class="action" id="openPanel" type="button">
       Open productivity panel (⌘/Ctrl+Shift+Y)
+    </button>
+    <button class="action secondary" id="openDashboard" type="button">
+      View stats &amp; learning log →
     </button>
     <div class="saved" id="saved"></div>
 

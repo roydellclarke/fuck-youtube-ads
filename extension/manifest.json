@@ -9,6 +9,10 @@
     "default_popup": "popup.html",
     "default_title": "WatchFree settings"
   },
+  "options_ui": {
+    "page": "dashboard.html",
+    "open_in_tab": true
+  },
   "background": {
     "service_worker": "background.js"
   },

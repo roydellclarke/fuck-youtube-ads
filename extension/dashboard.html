@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>WatchFree — Dashboard</title>
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        padding: 28px clamp(16px, 5vw, 56px) 56px;
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+        background: #0f0f15;
+        color: #f1f1f1;
+        max-width: 1040px;
+        margin-inline: auto;
+      }
+      h1 {
+        font-size: 24px;
+        margin: 0 0 2px;
+      }
+      .sub {
+        color: #9a9aa8;
+        font-size: 13px;
+        margin: 0 0 24px;
+      }
+      h2 {
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        color: #b6b6c4;
+        margin: 28px 0 12px;
+      }
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 12px;
+      }
+      .card {
+        background: #16161f;
+        border: 1px solid #26263300;
+        border: 1px solid #262633;
+        border-radius: 12px;
+        padding: 16px;
+      }
+      .card .n {
+        font-size: 26px;
+        font-weight: 700;
+        color: #fff;
+      }
+      .card .l {
+        font-size: 12px;
+        color: #9a9aa8;
+        margin-top: 4px;
+      }
+      .card.accent .n {
+        color: #8c9bff;
+      }
+      .card.streak .n {
+        color: #ffcf5b;
+      }
+      .chart {
+        background: #16161f;
+        border: 1px solid #262633;
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 16px;
+      }
+      .chart h3 {
+        margin: 0 0 10px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #c9c9d6;
+        display: flex;
+        justify-content: space-between;
+      }
+      .chart h3 .max {
+        color: #6f6f7e;
+        font-weight: 400;
+      }
+      svg {
+        width: 100%;
+        height: 120px;
+        display: block;
+      }
+      .axis {
+        display: flex;
+        justify-content: space-between;
+        font-size: 11px;
+        color: #6f6f7e;
+        margin-top: 6px;
+      }
+      .toolbar {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .toolbar input[type="search"] {
+        flex: 1;
+        min-width: 200px;
+        background: #0f0f15;
+        border: 1px solid #313140;
+        border-radius: 8px;
+        color: #f1f1f1;
+        padding: 9px 12px;
+        font-size: 14px;
+        outline: none;
+      }
+      .toolbar input[type="search"]:focus {
+        border-color: #5b6cff;
+      }
+      button {
+        background: #25252f;
+        color: #f1f1f1;
+        border: 1px solid #313140;
+        border-radius: 8px;
+        padding: 9px 14px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #2f2f3c;
+      }
+      button.danger:hover {
+        background: #3a2030;
+        color: #ff8aa0;
+        border-color: #5a2c3a;
+      }
+      .log {
+        margin-top: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .entry {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+        background: #16161f;
+        border: 1px solid #262633;
+        border-radius: 10px;
+        padding: 10px 12px;
+      }
+      .entry a.ts {
+        flex: none;
+        color: #8c9bff;
+        font-weight: 600;
+        text-decoration: none;
+        font-variant-numeric: tabular-nums;
+        padding-top: 1px;
+      }
+      .entry a.ts:hover {
+        text-decoration: underline;
+      }
+      .entry .body {
+        flex: 1;
+        min-width: 0;
+      }
+      .entry .note {
+        font-size: 14px;
+        word-break: break-word;
+      }
+      .entry .meta {
+        font-size: 12px;
+        color: #7d7d8c;
+        margin-top: 2px;
+      }
+      .entry .del {
+        flex: none;
+        background: transparent;
+        border: none;
+        color: #8a8a98;
+        font-size: 17px;
+        padding: 0 4px;
+      }
+      .entry .del:hover {
+        color: #ff6b6b;
+        background: transparent;
+      }
+      .empty {
+        color: #6f6f7e;
+        font-style: italic;
+        padding: 16px 2px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>WatchFree dashboard</h1>
+    <p class="sub">Everything WatchFree has saved you — and your study journal.</p>
+
+    <div class="cards" id="cards"></div>
+
+    <h2>Last 30 days</h2>
+    <div class="chart">
+      <h3><span>Time saved (ads + sponsors), seconds/day</span><span class="max" id="maxSaved"></span></h3>
+      <svg id="chartSaved" viewBox="0 0 600 120" preserveAspectRatio="none"></svg>
+      <div class="axis"><span id="savedStart"></span><span id="savedEnd"></span></div>
+    </div>
+    <div class="chart">
+      <h3><span>Focus minutes/day</span><span class="max" id="maxFocus"></span></h3>
+      <svg id="chartFocus" viewBox="0 0 600 120" preserveAspectRatio="none"></svg>
+      <div class="axis"><span id="focusStart"></span><span id="focusEnd"></span></div>
+    </div>
+    <div class="toolbar">
+      <button id="exportStatsCsv">Export stats (CSV)</button>
+      <button id="exportStatsJson">Export stats (JSON)</button>
+    </div>
+
+    <h2>Learning log</h2>
+    <div class="toolbar">
+      <input type="search" id="search" placeholder="Search notes & videos…" />
+      <button id="exportLogMd">Export Markdown</button>
+      <button id="exportLogJson">Export JSON</button>
+      <button id="clearLog" class="danger">Clear all</button>
+    </div>
+    <div class="log" id="log"></div>
+
+    <script src="storage.js"></script>
+    <script src="statsutil.js"></script>
+    <script src="sponsorblock.js"></script>
+    <script src="learninglog.js"></script>
+    <script src="dashboard.js"></script>
+  </body>
+</html>

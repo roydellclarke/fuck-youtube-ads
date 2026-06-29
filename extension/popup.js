@@ -193,6 +193,11 @@ function bind() {
   $("openPanel").addEventListener("click", () => {
     sendToTab({ type: "watchfree-toggle-panel" }, true);
   });
+
+  $("openDashboard").addEventListener("click", () => {
+    chrome.runtime.openOptionsPage();
+    window.close();
+  });
 }
 
 load();

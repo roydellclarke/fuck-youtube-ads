@@ -6,7 +6,13 @@ it appears, otherwise **mutes + speeds through** the ad — and covers the playe
 with a **productivity overlay** (a centered motivational quote + notes) for the
 ad's duration, then **cleanly restores the original playback state**.
 
-No backend, no external services, no build step. Everything runs in the browser.
+On top of ad handling it bundles four productivity features: **SponsorBlock**
+(skip in-video sponsor segments), a **timestamped learning log**, **focus
+sessions** (Pomodoro + distraction hiding), and a **stats dashboard**.
+
+No backend, no build step, no dependencies. The only network call is to the
+community SponsorBlock API (privacy-preserving hash-prefix query), and only when
+that feature is on. Everything else runs in the browser.
 
 ---
 
@@ -30,6 +36,21 @@ No backend, no external services, no build step. Everything runs in the browser.
   tabs.
 - **Nuisance dismissal.** Auto-closes banner/overlay ads and the
   "Video paused. Continue watching?" dialog.
+- **SponsorBlock.** Auto-skips community-flagged in-video segments (sponsor
+  reads, intros, outros, self-promo, interaction reminders, non-music). Queried
+  by **privacy-preserving hash prefix** — only the first 4 hex chars of the
+  SHA-256 of the video ID ever leave your machine. Per-category toggles in the
+  popup.
+- **Timestamped learning log.** Press **Ctrl/⌘+Shift+K** while watching to
+  capture a note bound to the video + current timestamp. Browse, search, jump
+  back (one click resumes at that second), and export (Markdown/JSON) from the
+  dashboard.
+- **Focus sessions.** Start a Pomodoro from the popup: WatchFree hides
+  recommendations, comments, Shorts shelves, and end-screen cards, shows a
+  countdown badge, and logs the focus minutes you complete.
+- **Stats dashboard.** An options page with summary cards, inline-SVG charts of
+  the last 30 days (time saved, focus minutes), a daily streak, the learning-log
+  browser, and CSV/JSON export.
 
 ---
 
@@ -48,10 +69,15 @@ relays the keyboard command. The module split below organizes the code; it does
 | **Controller**            | `controller.js` | state machine (`IDLE → AD_ACTIVE → IDLE`); plant context; stats |
 | **Actuators (Output)**    | `actuators.js`  | skip-click, mute, `playbackRate`, seek-to-end, overlay, restore, nuisance watch |
 | **Overlay**               | `overlay.js`    | Shadow-DOM UI (centered quote + notes + stats) |
-| Persistence               | `storage.js`    | sync (todos/notes/settings/quotes) + local (stats) |
-| Goal config + transport   | `content.js`    | wiring, SPA re-init, settings, panel toggle |
+| Persistence               | `storage.js`    | sync (notes/settings/quotes) + local (stats + learning log) |
+| Pure stats math           | `statsutil.js`  | daily buckets / series / streak / chart geometry (no DOM) |
+| SponsorBlock              | `sponsorblock.js` | hash-prefix fetch + `timeupdate` auto-skip |
+| Learning log              | `learninglog.js`  | capture bar + format/jump/search/export utils |
+| Focus sessions            | `focus.js`      | pure Pomodoro timer + distraction-hiding CSS + badge |
+| Goal config + transport   | `content.js`    | wiring, SPA re-init, settings, panel/capture/focus messages |
 | Settings UI               | `popup.html` / `popup.js` | toolbar popup |
-| Command relay             | `background.js` | service worker: keyboard command → content script |
+| Dashboard (options page)  | `dashboard.html` / `dashboard.js` | charts, streak, learning-log browser, export |
+| Command relay             | `background.js` | service worker: keyboard commands → content script |
 | Shadow-root styles        | `styles.css`    | injected into the shadow root only |
 
 **Transport** between content-script modules is plain function calls via a shared
@@ -88,16 +114,22 @@ reach the Controller. The Controller distinguishes:
 WatchFree/
 ├── README.md
 ├── extension/
-│   ├── manifest.json     # MV3; content script + popup action + background + command
-│   ├── content.js        # bootstrap: config, wiring, SPA re-init, settings, panel toggle
+│   ├── manifest.json     # MV3; content scripts + popup + options page + background + commands
+│   ├── content.js        # bootstrap: config, wiring, SPA re-init, settings, message handlers
 │   ├── sensor.js         # ad detection (MutationObserver + poll, debounced)
-│   ├── controller.js     # state machine + plant-context tracking + stats
-│   ├── actuators.js      # skip-click, mute (player API), speed, overlay, restore, nuisance watch
+│   ├── controller.js     # state machine + plant-context tracking + stats (incl. daily buckets)
+│   ├── actuators.js      # skip-click, mute (player API), speed, seek-to-end, overlay, nuisance watch
 │   ├── overlay.js        # Shadow-DOM overlay: centered quote + notes + stats
-│   ├── storage.js        # sync (todos/notes/settings/quotes) + local (stats)
+│   ├── storage.js        # sync (notes/settings/quotes) + local (stats + learning log)
+│   ├── statsutil.js      # pure stats math: daily buckets / series / streak / chart geometry
+│   ├── sponsorblock.js   # SponsorBlock: hash-prefix fetch + timeupdate auto-skip
+│   ├── learninglog.js    # timestamped learning log: capture bar + format/search/export utils
+│   ├── focus.js          # focus sessions: pure Pomodoro timer + distraction-hiding CSS + badge
 │   ├── popup.html        # settings popup markup
 │   ├── popup.js          # settings popup logic
-│   ├── background.js     # service worker: relays the keyboard command
+│   ├── dashboard.html    # options page: stats dashboard + learning-log browser
+│   ├── dashboard.js      # dashboard logic (inline-SVG charts, search, export)
+│   ├── background.js     # service worker: relays the keyboard commands
 │   └── styles.css        # injected into the shadow root only
 └── test/
     ├── README.md         # how to run both test layers
@@ -125,10 +157,14 @@ customized at `chrome://extensions/shortcuts`.
 
 Two layers (details in [`test/README.md`](test/README.md)):
 
-- **Logic (no browser):** `node test/harness.js` — loads the real sensor /
-  controller / actuators / storage with mocked `chrome`/DOM and asserts the ad
+- **Logic (no browser):** `node test/harness.js` — loads the real storage /
+  statsutil / sensor / controller / actuators / sponsorblock / learninglog /
+  focus modules with mocked `chrome`/DOM/`crypto`/`fetch` and asserts the ad
   lifecycle (state machine, exact restore, plant-context, debounce, poll
-  fallback, overlay-disabled, stats). Exits non-zero on failure.
+  fallback, overlay-disabled, stats) **plus** all four productivity features
+  (SponsorBlock parse + auto-skip, learning-log format/search/export/capture,
+  focus timer + accrual, dashboard summary/CSV/chart geometry). Exits non-zero
+  on failure.
 - **Real browser:** serve the repo and open the simulator, which drives the full
   Sensor → Controller → Actuators → Overlay pipeline (real Shadow DOM +
   `styles.css`) against a faked player:
@@ -163,9 +199,20 @@ match — that's the manual checklist below.
    it applies to the open tab without reload.
 8. **SPA navigation** — click to a new video without reloading; ad handling still
    works and the new video is not stuck muted/fast.
+9. **SponsorBlock** — open a video with a known sponsor segment; playback jumps
+   past it automatically. Toggle categories in the popup and confirm they take
+   effect on the next video.
+10. **Learning log** — press **Ctrl/⌘+Shift+K**, type a note, press Enter; open
+    the dashboard ("View stats & learning log →") and confirm the note appears
+    with its timestamp link (clicking it resumes the video at that second).
+11. **Focus session** — set work/break minutes in the popup, click *Start focus*;
+    recommendations/comments/Shorts disappear and the countdown badge shows. End
+    it; the page returns to normal and focus minutes appear on the dashboard.
+12. **Dashboard** — charts fill in over the last 30 days; the streak counter and
+    export buttons (Markdown/JSON/CSV) work.
 
 Optional: enable **Debug logging** in the popup and filter the console for
-`[WatchFree]` to see capture/restore values.
+`[WatchFree]` to see capture/restore values and SponsorBlock/focus activity.
 
 ---
 
@@ -192,3 +239,9 @@ Optional: enable **Debug logging** in the popup and filter the console for
 - **New ad signal:** extend `sensor.js`.
 - **Ad-handling behavior:** `actuators.js` (`engageAd` / `disengageAd` / `tryDismiss`).
 - **Overlay UI:** `overlay.js` (+ `styles.css`).
+- **SponsorBlock categories / API:** `CONFIG.sponsorBlockCategories` +
+  `CONFIG.sponsorBlockApiBase` in `content.js` (and popup checkboxes).
+- **Focus-mode hidden elements:** `CONFIG.focusHideSelectors` in `content.js`.
+- **Dashboard charts / exports:** `dashboard.js`, reusing pure helpers in
+  `statsutil.js` (`buildDailySeries` / `computeStreak` / `barLayout` /
+  `seriesToCsv`) and `learninglog.js` (`logUtil`).

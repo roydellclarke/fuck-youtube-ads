@@ -292,6 +292,8 @@ function setup(video) {
     const after = await NS.storage.getStats();
     ok("count incremented", (after.count || 0) === before + 1);
     ok("secondsSaved is a number ≥ 0", typeof after.secondsSaved === "number" && after.secondsSaved >= 0);
+    const todayKey = NS.statsUtil.dateKey(new Date());
+    ok("daily ad bucket written", after.daily[todayKey] && after.daily[todayKey].adCount >= 1);
   }
 
   // I. storage.js roundtrip (sync for todos/notes/quotes, local for stats).
@@ -493,6 +495,38 @@ function setup(video) {
 
     t.stop();
     ok("stop → idle", t.getState().phase === "idle" && !t.getState().running);
+  }
+
+  // O. Dashboard helpers — summary, CSV export, bar-chart geometry.
+  console.log("\nO. Dashboard — summarize / CSV / bar layout");
+  {
+    const U = NS.statsUtil;
+    const sum = U.summarize({
+      count: 12,
+      secondsSaved: 360,
+      sponsorCount: 4,
+      sponsorSecondsSaved: 125,
+      focusMinutes: 50,
+      focusSessions: 2,
+    });
+    ok("summarize ads + minutes", sum.ads === 12 && sum.adMinutes === 6);
+    ok("summarize sponsor minutes rounded", sum.sponsorMinutes === 2);
+    ok("summarize focus", sum.focusMinutes === 50 && sum.focusSessions === 2);
+
+    const series = U.buildDailySeries(
+      U.bumpDaily({ daily: {} }, "2026-06-29", { adCount: 3, adSeconds: 90 }),
+      ["2026-06-28", "2026-06-29"]
+    );
+    const csv = U.seriesToCsv(series);
+    ok("CSV has header + a row per day", csv.split("\n").length === 3 && csv.startsWith("date,adCount"));
+    ok("CSV row carries values", csv.includes("2026-06-29,3,90,0,0,0"));
+
+    const bars = U.barLayout([0, 5, 10], { width: 30, height: 100, gap: 0 });
+    ok("barLayout widths fill box", bars.length === 3 && bars[0].w === 10);
+    ok("barLayout scales to max", bars[1].h === 50 && bars[2].h === 100 && bars[0].h === 0);
+    ok("barLayout y = height - h", bars[2].y === 0 && bars[0].y === 100);
+    ok("barLayout empty → []", U.barLayout([], {}).length === 0);
+    ok("barLayout all-zero safe", U.barLayout([0, 0], { height: 50 }).every((b) => b.h === 0));
   }
 
   if (current) current.sensor.detach();

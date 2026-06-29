@@ -5,12 +5,17 @@ and real browser/DOM behavior.
 
 ## 1. `harness.js` — Node logic tests (no browser)
 
-Loads the **real** `sensor.js`, `actuators.js`, `controller.js`, and `storage.js`
-with mocked `chrome` (`storage.sync` + `storage.local`), `document`, and
-`MutationObserver`, then drives the ad lifecycle and asserts behavior. Covers: the
-state machine, capture-before-change + exact restore, plant-context (`reset()`),
-skip-click path, debounce, poll-only fallback, `overlayEnabled=false`, stats
-counting, and storage round-trips (sync + local).
+Loads the **real** `storage.js`, `statsutil.js`, `sensor.js`, `actuators.js`,
+`controller.js`, `sponsorblock.js`, `learninglog.js`, and `focus.js` with mocked
+`chrome` (`storage.sync` + `storage.local`), `document`, `MutationObserver`,
+`crypto` (WebCrypto), and an injectable `fetch`, then drives the ad lifecycle and
+asserts behavior. Covers (blocks A–O): the state machine, capture-before-change +
+exact restore, plant-context (`reset()`), skip-click path, debounce, poll-only
+fallback, `overlayEnabled=false`, stats counting + daily buckets, storage
+round-trips, **statsutil** (daily series / streak / chart geometry / CSV),
+**SponsorBlock** (URL parse, segment normalize/filter, auto-skip, stats),
+**learning log** (format / jump URL / search / Markdown export / capture), and
+**focus sessions** (timer state machine, pause/resume, distraction CSS, accrual).
 
 ```bash
 node test/harness.js
