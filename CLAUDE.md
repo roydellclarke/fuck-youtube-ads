@@ -47,6 +47,24 @@ Invariants to preserve when editing:
 - User settings: the popup → `chrome.storage.sync` → merged over `CONFIG`.
 - Internal tuning + selectors: `CONFIG` in `content.js`. YouTube renames markup over time; the things that break and where to fix them: skip button → `CONFIG.skipSelectors`; banner ads → `CONFIG.nuisanceSelectors`; continue-watching dialog → `CONFIG.continueDialogSelectors` (marked with a TODO — verify on live YouTube); ad signal → `sensor.js`; focus-mode hidden elements → `CONFIG.focusHideSelectors`; SponsorBlock categories → `CONFIG.sponsorBlockCategories` (and the popup checkboxes); SponsorBlock API base → `CONFIG.sponsorBlockApiBase`.
 
+## Working with Claude on this repo (workflow conventions)
+
+These are the working defaults for this codebase. They're phrased as the prompts that trigger them so they're easy to invoke.
+
+- **"Write me an implementation spec" / "Interview me" — plan before building.** For anything bigger than a one-file edit, write the change list first (files touched, new `CONFIG` keys, new `SETTING_KEYS`, storage shape, test blocks to add) and confirm it before coding. If the request is underspecified (which selectors? sync vs local? user-facing setting or internal tuning?), ask the questions first rather than guessing — wrong assumptions here are expensive because load order, the mute-via-API rule, and the storage quotas all have non-obvious constraints. The recent four-feature build followed this: spec → unit tests → wire UI → verify, one feature per commit.
+
+- **"Verify before you build" — the standing verification plan.** Every change runs this ladder, cheapest first; don't claim done until the relevant rungs pass:
+  1. **Syntax:** the syntax-check one-liner in *Commands* (`json.tool` + `node --check` over every JS file).
+  2. **Logic:** `node test/harness.js` — and *add a test block* for new pure logic (the harness is the TDD vehicle; keep core logic in DOM-free `*Util` factories so it's unit-testable). Touching sensor/controller/actuators/storage/statsutil/sponsorblock/learninglog/focus → this is mandatory.
+  3. **In-browser wiring:** the simulator (`test/simulator.html`) after touching `overlay.js`, `styles.css`, `content.js`, or the content-script load order — and tools are available to drive it (the `browse` skill loads it headless and reports console errors; use it as Layer-2 "Claude checks its own work").
+  4. **Human-validation zone:** live YouTube is the one surface tests can't prove (real `ad-showing` class, skip selectors, SponsorBlock fetch against YT's origin, focus-hide selectors). Flag these for a manual pass against the README checklist instead of asserting they work.
+
+- **"Launch sub agents" — parallelize independent work.** Good fits here: sweeping for current YouTube selector names across the markup, getting multiple independent reviews of a tricky change (the mute/restore race is a classic), or exploring options before committing to one. Keep the critical edit sequential; fan out the research.
+
+- **"Based on this conversation, build me a skill" — codify repeated flows.** If a multi-step task recurs (e.g. "serve the repo, load the simulator headless, drive the ad lifecycle, report console errors"), turn the concrete steps from the actual conversation into a skill, with a *gotchas* section (e.g. the status panel polls on its own cadence, so read live state via `js`, not the status div).
+
+- **"Automate this" — use with caution.** Run a taste test first: anything touching what the *user* sees (overlay copy, quote curation, dashboard layout) needs human judgment — augment, don't fully automate. Mechanical, fully-quantifiable steps (the test ladder, syntax checks, selector sweeps) are safe to automate. Rule of thumb: if an 80%-as-good-as-human output wouldn't satisfy you, keep a human in the loop.
+
 ## Known scope limits (don't "fix" without discussion)
 
 Server-side ad insertion (SSAI) is intentionally unsupported — stitched-in ads have no separate element or `ad-showing` class, so this approach can't fire. Audio/visual classification is noted as future work, not a bug.
