@@ -29,11 +29,24 @@
       "outro",
       "music_offtopic",
     ],
+    focusWorkMin: 25, // Pomodoro work block length
+    focusBreakMin: 5, // Pomodoro break length
     debug: false, // log capture/restore to the console
 
     // internal tuning:
     sponsorBlockApiBase: "https://sponsor.ajay.app/api/",
     sponsorBlockMinSeconds: 1, // ignore sub-second segments (not worth a seek)
+    // Attention sinks hidden while a focus session runs.
+    focusHideSelectors: [
+      "#secondary", // watch-page recommendations
+      "ytd-watch-next-secondary-results-renderer",
+      "#comments", // comment section
+      "ytd-reel-shelf-renderer", // Shorts shelves
+      "ytd-rich-shelf-renderer[is-shorts]",
+      "ytd-merch-shelf-renderer",
+      ".ytp-endscreen-content", // end-screen video grid
+      ".ytp-ce-element", // end-screen cards
+    ],
     pollIntervalMs: 300, // sensor poll (redundant with MutationObserver)
     debounceMs: 50, // ad-showing flip debounce
     skipRetryMs: 250, // how often to retry Skip + seek-to-end during an ad
@@ -71,6 +84,8 @@
     "dismissNuisances",
     "sponsorBlockEnabled",
     "sponsorBlockCategories",
+    "focusWorkMin",
+    "focusBreakMin",
     "debug",
   ];
 
@@ -90,6 +105,7 @@
   let sensor = null;
   let sponsorBlock = null;
   let learningLog = null;
+  let focus = null;
   let attached = false;
 
   function ensureWiring() {
@@ -105,6 +121,7 @@
     }
     if (!sponsorBlock) sponsorBlock = NS.createSponsorBlock(CONFIG, getVideo);
     if (!learningLog) learningLog = NS.createLearningLog(CONFIG, getVideo);
+    if (!focus) focus = NS.createFocus(CONFIG);
   }
 
   // SponsorBlock follows the master toggle AND its own toggle. Re-load segments
@@ -175,6 +192,7 @@
       if (sensor) sensor.detach();
       if (actuators) actuators.stopNuisanceWatch();
       if (sponsorBlock) sponsorBlock.clear();
+      if (focus) focus.stopSession();
       attached = false;
     }
   }
@@ -214,6 +232,9 @@
     if (msg.type === "watchfree-toggle-panel") togglePanel();
     else if (msg.type === "watchfree-capture-note" && learningLog) {
       learningLog.promptCapture();
+    } else if (msg.type === "watchfree-focus" && focus) {
+      if (msg.action === "start") focus.startSession(msg.workMin, msg.breakMin);
+      else if (msg.action === "stop") focus.stopSession();
     }
   });
 

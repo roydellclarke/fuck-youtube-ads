@@ -128,6 +128,32 @@
         width: 15px;
         height: 15px;
       }
+      .focus-btns {
+        display: flex;
+        gap: 8px;
+        margin-top: 8px;
+      }
+      button.mini {
+        flex: 1;
+        background: #25252f;
+        color: #f1f1f1;
+        border: 1px solid #313140;
+        border-radius: 8px;
+        padding: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      button.mini:hover {
+        background: #2f2f3c;
+      }
+      button.mini.primary {
+        background: #5b6cff;
+        border-color: #5b6cff;
+      }
+      button.mini.primary:hover {
+        background: #4a5ae8;
+      }
     </style>
   </head>
   <body>
@@ -186,6 +212,25 @@
       <label><input type="checkbox" id="sb_music_offtopic" /> Non-music</label>
       <label><input type="checkbox" id="sb_preview" /> Preview / recap</label>
       <label><input type="checkbox" id="sb_filler" /> Filler / tangent</label>
+    </div>
+
+    <hr />
+
+    <p class="section-title">Focus session</p>
+    <p class="hint" style="margin: 0 0 6px">
+      Hides recommendations, comments &amp; Shorts and runs a Pomodoro timer.
+    </p>
+    <div class="row">
+      <label for="focusWorkMin">Work minutes</label>
+      <input type="number" id="focusWorkMin" min="1" max="180" step="1" />
+    </div>
+    <div class="row">
+      <label for="focusBreakMin">Break minutes</label>
+      <input type="number" id="focusBreakMin" min="1" max="180" step="1" />
+    </div>
+    <div class="focus-btns">
+      <button type="button" id="focusStart" class="mini primary">Start focus</button>
+      <button type="button" id="focusStop" class="mini">Stop</button>
     </div>
 
     <hr />

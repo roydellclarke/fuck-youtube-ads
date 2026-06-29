@@ -40,6 +40,7 @@
         "controller.js",
         "sponsorblock.js",
         "learninglog.js",
+        "focus.js",
         "content.js"
       ],
       "run_at": "document_idle",

@@ -77,6 +77,7 @@ for (const f of [
   "controller.js",
   "sponsorblock.js",
   "learninglog.js",
+  "focus.js",
 ]) {
   const code = fs.readFileSync(path.join(EXT, f), "utf8");
   eval(code); // IIFEs attach to global.window.WatchFree
@@ -454,6 +455,44 @@ function setup(video) {
     const after = await NS.storage.getLog();
     ok("capture persists, newest first", after.length === before + 1 && after[0].id === "entry-1");
     ok("capture ignores empty note", (await ll.capture("   ")) === null);
+  }
+
+  // N. Focus sessions — pure timer, CSS, and stats accrual.
+  console.log("\nN. Focus — timer state machine + hiding CSS + accrual");
+  {
+    const F = NS.focusUtil;
+    ok("distractionCss hides selectors", F.distractionCss(["#a", "#b"]) === "#a,\n#b { display: none !important; }\n");
+    ok("distractionCss empty → ''", F.distractionCss([]) === "");
+    ok("clock mm:ss", F.clock(90000) === "1:30" && F.clock(5000) === "0:05");
+
+    const stats = {};
+    F.applyFocusMinutes(stats, "2026-06-29", 25);
+    ok("accrue minutes + session + daily", stats.focusMinutes === 25 && stats.focusSessions === 1 && stats.daily["2026-06-29"].focusMinutes === 25);
+
+    const t = NS.createFocusTimer();
+    const T0 = 1000000; // arbitrary base "now" in ms
+    t.start(25, 5, T0);
+    ok("starts in work phase, running", t.getState().phase === "work" && t.getState().running);
+    ok("remaining ~25min", t.remaining(T0) === 25 * 60000);
+    ok("no transition before end", t.tick(T0 + 60000).transitioned === false);
+
+    let r = t.tick(T0 + 25 * 60000); // work block elapses
+    ok("work→break transition reports minutes", r.transitioned && r.phase === "break" && r.completedWorkMin === 25);
+    ok("session counted", t.getState().sessions === 1);
+
+    r = t.tick(T0 + 25 * 60000 + 5 * 60000); // break elapses
+    ok("break→work, no minutes credited", r.transitioned && r.phase === "work" && r.completedWorkMin === 0);
+
+    // pause/resume preserves remaining.
+    t.start(10, 5, T0);
+    t.pause(T0 + 4 * 60000);
+    ok("paused stops running", t.getState().running === false);
+    ok("paused remaining frozen", t.remaining(T0 + 9 * 60000) === 6 * 60000);
+    t.resume(T0 + 9 * 60000);
+    ok("resume re-anchors remaining", t.remaining(T0 + 9 * 60000) === 6 * 60000 && t.getState().running);
+
+    t.stop();
+    ok("stop → idle", t.getState().phase === "idle" && !t.getState().running);
   }
 
   if (current) current.sensor.detach();

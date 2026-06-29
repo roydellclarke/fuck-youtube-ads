@@ -39,6 +39,8 @@ const DEFAULT_SETTINGS = {
     "outro",
     "music_offtopic",
   ],
+  focusWorkMin: 25,
+  focusBreakMin: 5,
   debug: false,
 };
 
@@ -86,6 +88,9 @@ async function load() {
     const el = $("sb_" + cat);
     if (el) el.checked = active.has(cat);
   }
+
+  $("focusWorkMin").value = settings.focusWorkMin;
+  $("focusBreakMin").value = settings.focusBreakMin;
 
   const localGot = await chrome.storage.local.get({
     [KEYS.stats]: { count: 0, secondsSaved: 0 },
@@ -145,16 +150,48 @@ function bind() {
     }, 400);
   });
 
-  $("openPanel").addEventListener("click", () => {
+  // Focus durations: clamp + persist (content.js reads them as defaults).
+  const clampMin = (v, def) => {
+    let n = parseInt(v, 10);
+    if (isNaN(n)) n = def;
+    return Math.max(1, Math.min(180, n));
+  };
+  $("focusWorkMin").addEventListener("change", (e) => {
+    e.target.value = settings.focusWorkMin = clampMin(e.target.value, 25);
+    saveSettings();
+  });
+  $("focusBreakMin").addEventListener("change", (e) => {
+    e.target.value = settings.focusBreakMin = clampMin(e.target.value, 5);
+    saveSettings();
+  });
+
+  const sendToTab = (msg, close) => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       const tab = tabs && tabs[0];
       if (tab && tab.id != null) {
-        chrome.tabs
-          .sendMessage(tab.id, { type: "watchfree-toggle-panel" })
-          .catch(() => {});
+        chrome.tabs.sendMessage(tab.id, msg).catch(() => {});
       }
-      window.close();
+      if (close) window.close();
     });
+  };
+
+  $("focusStart").addEventListener("click", () => {
+    sendToTab(
+      {
+        type: "watchfree-focus",
+        action: "start",
+        workMin: settings.focusWorkMin,
+        breakMin: settings.focusBreakMin,
+      },
+      true
+    );
+  });
+  $("focusStop").addEventListener("click", () => {
+    sendToTab({ type: "watchfree-focus", action: "stop" }, true);
+  });
+
+  $("openPanel").addEventListener("click", () => {
+    sendToTab({ type: "watchfree-toggle-panel" }, true);
   });
 }
 
