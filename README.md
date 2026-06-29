@@ -3,9 +3,8 @@
 A single Manifest V3 Chrome extension that, on `youtube.com`, **detects
 client-side-inserted ads and instantly handles them** — clicks *Skip* the moment
 it appears, otherwise **mutes + speeds through** the ad — and covers the player
-with a **productivity overlay** (todo list + notes + rotating motivational
-quotes) for the ad's duration, then **cleanly restores the original playback
-state**.
+with a **productivity overlay** (a centered motivational quote + notes) for the
+ad's duration, then **cleanly restores the original playback state**.
 
 No backend, no external services, no build step. Everything runs in the browser.
 
@@ -19,9 +18,9 @@ No backend, no external services, no build step. Everything runs in the browser.
 - **Exact state restore.** Mute goes through YouTube's own player API so it
   sticks; the user's prior mute + playback speed are captured before any change
   and restored after the ad.
-- **Productivity overlay.** Full-size overlay over the video with a todo list,
-  a notes panel, and rotating motivational quotes. Persists via
-  `chrome.storage.sync` (follows you across devices).
+- **Productivity overlay.** Full-size overlay over the video with a large,
+  centered rotating motivational quote as the centerpiece and a notes panel
+  below. Persists via `chrome.storage.sync` (follows you across devices).
 - **On-demand panel.** Open the same panel anytime with **Ctrl/⌘+Shift+Y** or the
   popup button — not just during ads.
 - **Stats.** Counts ads handled and estimated time saved (shown in the overlay
@@ -47,8 +46,8 @@ relays the keyboard command. The module split below organizes the code; it does
 | Input (environment)       | the live player + DOM | not code — YouTube's `<video>` + `#movie_player` |
 | **Sensor**                | `sensor.js`     | detects ad start/end from player signals |
 | **Controller**            | `controller.js` | state machine (`IDLE → AD_ACTIVE → IDLE`); plant context; stats |
-| **Actuators (Output)**    | `actuators.js`  | skip-click, mute, `playbackRate`, overlay, restore, nuisance watch |
-| **Overlay**               | `overlay.js`    | Shadow-DOM UI (todos + notes + quotes + stats) |
+| **Actuators (Output)**    | `actuators.js`  | skip-click, mute, `playbackRate`, seek-to-end, overlay, restore, nuisance watch |
+| **Overlay**               | `overlay.js`    | Shadow-DOM UI (centered quote + notes + stats) |
 | Persistence               | `storage.js`    | sync (todos/notes/settings/quotes) + local (stats) |
 | Goal config + transport   | `content.js`    | wiring, SPA re-init, settings, panel toggle |
 | Settings UI               | `popup.html` / `popup.js` | toolbar popup |
@@ -94,7 +93,7 @@ WatchFree/
 │   ├── sensor.js         # ad detection (MutationObserver + poll, debounced)
 │   ├── controller.js     # state machine + plant-context tracking + stats
 │   ├── actuators.js      # skip-click, mute (player API), speed, overlay, restore, nuisance watch
-│   ├── overlay.js        # Shadow-DOM overlay: todos + notes + quotes + stats
+│   ├── overlay.js        # Shadow-DOM overlay: centered quote + notes + stats
 │   ├── storage.js        # sync (todos/notes/settings/quotes) + local (stats)
 │   ├── popup.html        # settings popup markup
 │   ├── popup.js          # settings popup logic
@@ -151,8 +150,8 @@ match — that's the manual checklist below.
 1. **Pre-roll handling** — open a video with a pre-roll ad. Skip is clicked the
    moment it appears; unskippable ads are muted + sped up.
 2. **Overlay** — during an unskippable ad the full-size overlay covers the player
-   with a rotating quote, todos, and notes.
-3. **Persistence + sync** — add a todo/note; it survives reloads and appears on
+   with a large, centered rotating quote and a notes panel below.
+3. **Persistence + sync** — add a note; it survives reloads and appears on
    another machine signed into the same Chrome profile.
 4. **Exact restore** — set a custom speed (e.g. 1.5×) and/or mute before an ad;
    after the ad, the player returns to exactly that state. **Confirm the sound

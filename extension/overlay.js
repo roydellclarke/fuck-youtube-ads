@@ -1,4 +1,4 @@
-// overlay.js — Shadow-DOM productivity UI (todo list + note panel + quotes).
+// overlay.js — Shadow-DOM productivity UI (centered motivational quote + notes).
 //
 // The overlay lives in a Shadow DOM host mounted over #movie_player so that
 // YouTube's page CSS cannot leak in, and our CSS cannot leak out. styles.css is
@@ -26,13 +26,6 @@
       }
     })();
     return cssTextPromise;
-  }
-
-  function uid() {
-    if (crypto && typeof crypto.randomUUID === "function") {
-      return crypto.randomUUID();
-    }
-    return "id-" + Math.abs(Math.floor(performance.now() * 1000)).toString(36);
   }
 
   // Built-in motivational quotes (used when the user hasn't set custom ones).
@@ -65,53 +58,6 @@
     let quoteTimer = null;
     let quoteIndex = 0;
     let activeQuotes = DEFAULT_QUOTES;
-    let todos = [];
-
-    // --- rendering -----------------------------------------------------------
-
-    function renderTodos(listEl) {
-      listEl.textContent = "";
-      if (todos.length === 0) {
-        const empty = document.createElement("li");
-        empty.className = "todo-empty";
-        empty.textContent = "No todos yet — add one above.";
-        listEl.appendChild(empty);
-        return;
-      }
-      for (const todo of todos) {
-        const li = document.createElement("li");
-        li.className = "todo-item" + (todo.done ? " done" : "");
-
-        const checkbox = document.createElement("input");
-        checkbox.type = "checkbox";
-        checkbox.checked = !!todo.done;
-        checkbox.addEventListener("change", () => {
-          todo.done = checkbox.checked;
-          NS.storage.saveTodos(todos);
-          li.classList.toggle("done", todo.done);
-        });
-
-        const label = document.createElement("span");
-        label.className = "todo-text";
-        label.textContent = todo.text; // textContent — never inject user HTML
-
-        const del = document.createElement("button");
-        del.className = "todo-del";
-        del.type = "button";
-        del.setAttribute("aria-label", "Delete todo");
-        del.textContent = "×";
-        del.addEventListener("click", () => {
-          todos = todos.filter((t) => t.id !== todo.id);
-          NS.storage.saveTodos(todos);
-          renderTodos(listEl);
-        });
-
-        li.appendChild(checkbox);
-        li.appendChild(label);
-        li.appendChild(del);
-        listEl.appendChild(li);
-      }
-    }
 
     function buildUI(opts) {
       const wrap = document.createElement("div");
@@ -139,9 +85,8 @@
       header.appendChild(stats);
 
       // Close button (only for the on-demand panel; during ads it stays locked).
-      let closeBtn = null;
       if (opts.closable) {
-        closeBtn = document.createElement("button");
+        const closeBtn = document.createElement("button");
         closeBtn.className = "close-btn";
         closeBtn.type = "button";
         closeBtn.setAttribute("aria-label", "Close panel");
@@ -150,46 +95,14 @@
         header.appendChild(closeBtn);
       }
 
-      // Motivational quote (rotates while the overlay is up).
+      // Centerpiece: the motivational quote, vertically + horizontally centered
+      // in the space between the header and the notes.
+      const quoteZone = document.createElement("div");
+      quoteZone.className = "quote-zone";
       const quote = document.createElement("blockquote");
       quote.className = "quote";
       quote.textContent = activeQuotes[quoteIndex % activeQuotes.length];
-
-      // --- Todo section ---
-      const todoSection = document.createElement("section");
-      todoSection.className = "section";
-      const todoHeading = document.createElement("h2");
-      todoHeading.textContent = "Todos";
-      todoSection.appendChild(todoHeading);
-
-      const addRow = document.createElement("form");
-      addRow.className = "add-row";
-      const input = document.createElement("input");
-      input.type = "text";
-      input.className = "todo-input";
-      input.placeholder = "Add a todo…";
-      const addBtn = document.createElement("button");
-      addBtn.type = "submit";
-      addBtn.className = "todo-add";
-      addBtn.textContent = "Add";
-      addRow.appendChild(input);
-      addRow.appendChild(addBtn);
-
-      const list = document.createElement("ul");
-      list.className = "todo-list";
-
-      addRow.addEventListener("submit", (e) => {
-        e.preventDefault();
-        const text = input.value.trim();
-        if (!text) return;
-        todos.push({ id: uid(), text, done: false });
-        NS.storage.saveTodos(todos);
-        input.value = "";
-        renderTodos(list);
-      });
-
-      todoSection.appendChild(addRow);
-      todoSection.appendChild(list);
+      quoteZone.appendChild(quote);
 
       // --- Notes section ---
       const noteSection = document.createElement("section");
@@ -210,12 +123,11 @@
       noteSection.appendChild(textarea);
 
       card.appendChild(header);
-      card.appendChild(quote);
-      card.appendChild(todoSection);
+      card.appendChild(quoteZone);
       card.appendChild(noteSection);
       wrap.appendChild(card);
 
-      return { wrap, list, input, textarea, quote, stats };
+      return { wrap, textarea, quote, stats };
     }
 
     function formatSaved(seconds) {
@@ -234,9 +146,6 @@
         activeQuotes = custom;
         parts.quote.textContent = activeQuotes[quoteIndex % activeQuotes.length];
       }
-
-      todos = await NS.storage.getTodos();
-      renderTodos(parts.list);
 
       const notes = await NS.storage.getNotes();
       parts.textarea.value = notes;

@@ -2,7 +2,8 @@
 //
 // Responsibilities:
 //   - try to click the "Skip" button (several selector variants, in order),
-//   - if unskippable: mute + crank playbackRate to burn through the ad,
+//   - if unskippable: mute + crank playbackRate AND seek toward the ad's end to
+//     burn through it as fast as possible,
 //   - mount/unmount the overlay,
 //   - capture and restore exact prior playback state,
 //   - dismiss banner ads and the "continue watching" dialog (nuisance watch).
@@ -68,6 +69,26 @@
     function setRate(rate) {
       const v = getVideo();
       if (v) v.playbackRate = rate;
+    }
+
+    // Force an unskippable ad toward its end so real playback resumes sooner.
+    // YouTube blocks scrubbing *forward* on skippable pre-rolls, but jumping an
+    // unskippable ad video to near its duration ends it almost immediately. We
+    // only seek when the duration is known/finite and we're not already there,
+    // so this is a no-op for live/unknown-duration media (and in tests).
+    function seekAdToEnd() {
+      const v = getVideo();
+      if (!v) return;
+      const dur = v.duration;
+      if (typeof dur !== "number" || !isFinite(dur) || dur <= 0) return;
+      const target = Math.max(0, dur - (config.adEndEpsilon || 0.15));
+      if (!(v.currentTime >= target)) {
+        try {
+          v.currentTime = target;
+        } catch (e) {
+          /* some players reject the seek; the rate crank still applies */
+        }
+      }
     }
 
     // Attempt to click a skip button if one is present. Returns true on click.
@@ -163,6 +184,7 @@
       clearRestoreTimers();
       if (config.muteDuringAd) applyMuted(true);
       setRate(config.adPlaybackRate);
+      seekAdToEnd();
       if (config.overlayEnabled) overlay.mount();
 
       // Click Skip the instant it appears (observer), with an immediate attempt
@@ -177,6 +199,8 @@
         if (vid && vid.playbackRate !== config.adPlaybackRate) {
           setRate(config.adPlaybackRate);
         }
+        // Duration often isn't known at ad start, so keep nudging toward the end.
+        seekAdToEnd();
         trySkip();
       }, config.skipRetryMs || 500);
     }

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A single Manifest V3 Chrome extension (no build step, no dependencies) that detects **client-side-inserted** YouTube ads, skips them (or mutes + speeds through unskippable ones), shows a Shadow-DOM productivity overlay (todos + notes + rotating quotes + stats) during the ad, then restores the exact prior playback state. It also has a settings popup, a stats counter, an on-demand panel (keyboard shortcut), and nuisance-ad dismissal. The whole ad-handling loop runs in the content script; the service worker only relays the keyboard command.
+A single Manifest V3 Chrome extension (no build step, no dependencies) that detects **client-side-inserted** YouTube ads, skips them (or mutes + speeds through unskippable ones), shows a Shadow-DOM productivity overlay (a centered motivational quote + notes + stats) during the ad, then restores the exact prior playback state. It also has a settings popup, a stats counter, an on-demand panel (keyboard shortcut), and nuisance-ad dismissal. The whole ad-handling loop runs in the content script; the service worker only relays the keyboard command.
 
 ## Commands
 

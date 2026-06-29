@@ -25,7 +25,8 @@
     // internal tuning:
     pollIntervalMs: 300, // sensor poll (redundant with MutationObserver)
     debounceMs: 50, // ad-showing flip debounce
-    skipRetryMs: 500, // how often to retry the Skip button during an ad
+    skipRetryMs: 250, // how often to retry Skip + seek-to-end during an ad
+    adEndEpsilon: 0.15, // seconds short of duration to seek unskippable ads to
     nuisancePollMs: 1000, // how often to scan for banner ads / dialogs
     overlayFadeMs: 200,
     quoteRotateMs: 5000, // how often the motivational quote rotates

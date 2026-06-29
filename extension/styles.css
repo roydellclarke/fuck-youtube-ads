@@ -34,6 +34,17 @@
   padding: clamp(12px, 3vw, 32px);
 }
 
+/* Centerpiece zone: takes all the space between the header and the notes and
+   centers the motivational quote within it, both axes. */
+.quote-zone {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  padding: clamp(8px, 2vh, 24px) 0;
+}
+
 .card-header {
   display: flex;
   align-items: baseline;
@@ -71,13 +82,13 @@
   color: #fff;
 }
 
-/* Motivational quote — prominent, centered, with breathing room. */
+/* Motivational quote — the centerpiece. Large, centered, breathing room. */
 .quote {
-  margin: clamp(12px, 4vh, 40px) auto;
-  max-width: 720px;
+  margin: 0;
+  max-width: 820px;
   text-align: center;
-  font-size: clamp(16px, 2.4vw, 28px);
-  line-height: 1.45;
+  font-size: clamp(20px, 3.2vw, 40px);
+  line-height: 1.4;
   font-style: italic;
   font-weight: 500;
   color: #e8e8f4;
@@ -106,94 +117,6 @@
   color: #b6b6c4;
   margin: 0 0 8px;
   font-weight: 600;
-}
-
-/* --- todo add row --- */
-.add-row {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-.todo-input {
-  flex: 1;
-  background: #0f0f15;
-  border: 1px solid #313140;
-  border-radius: 8px;
-  padding: 8px 10px;
-  color: #f1f1f1;
-  font-size: 14px;
-  outline: none;
-}
-.todo-input:focus {
-  border-color: #5b6cff;
-}
-.todo-add {
-  background: #5b6cff;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 0 14px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-}
-.todo-add:hover {
-  background: #4a5ae8;
-}
-
-/* --- todo list --- */
-.todo-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.todo-empty {
-  color: #6f6f7e;
-  font-size: 13px;
-  font-style: italic;
-  padding: 4px 2px;
-}
-.todo-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 6px 8px;
-  border-radius: 8px;
-  background: #11111a;
-}
-.todo-item input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
-  accent-color: #5b6cff;
-  cursor: pointer;
-  flex: none;
-}
-.todo-item .todo-text {
-  flex: 1;
-  font-size: 14px;
-  word-break: break-word;
-}
-.todo-item.done .todo-text {
-  text-decoration: line-through;
-  color: #6f6f7e;
-}
-.todo-del {
-  flex: none;
-  background: transparent;
-  border: none;
-  color: #8a8a98;
-  font-size: 18px;
-  line-height: 1;
-  cursor: pointer;
-  padding: 2px 6px;
-  border-radius: 6px;
-}
-.todo-del:hover {
-  background: #2a2a36;
-  color: #ff6b6b;
 }
 
 /* --- notes --- */
