@@ -22,7 +22,23 @@
     settings: "watchfree_settings",
     quotes: "watchfree_quotes",
     stats: "watchfree_stats",
+    log: "watchfree_log",
   };
+
+  // The shape getStats() fills missing fields up to. New counters were added
+  // over time (sponsor skips, focus minutes, per-day buckets); older stored
+  // blobs won't have them, so we always merge over this default.
+  function defaultStats() {
+    return {
+      count: 0, // ads handled
+      secondsSaved: 0, // estimated ad-seconds saved
+      sponsorCount: 0, // in-video sponsor segments auto-skipped
+      sponsorSecondsSaved: 0, // their total duration
+      focusMinutes: 0, // focus-session minutes completed
+      focusSessions: 0, // completed work sessions
+      daily: {}, // 'YYYY-MM-DD' -> day bucket (see statsutil.emptyDay)
+    };
+  }
 
   async function get(area, key, fallback) {
     try {
@@ -78,12 +94,34 @@
       return set(sync, KEYS.quotes, Array.isArray(quotes) ? quotes : []);
     },
 
-    // Stats: { count, secondsSaved }.  (device-local)
-    getStats() {
-      return get(local, KEYS.stats, { count: 0, secondsSaved: 0 });
+    // Stats (device-local): see defaultStats() for the shape. Always returned
+    // with every field present (old blobs are merged over the default).
+    async getStats() {
+      const raw = await get(local, KEYS.stats, {});
+      return Object.assign(defaultStats(), raw || {});
     },
     saveStats(stats) {
-      return set(local, KEYS.stats, stats || { count: 0, secondsSaved: 0 });
+      return set(local, KEYS.stats, stats || defaultStats());
+    },
+
+    // Learning log: array of { id, videoId, title, url, t, note, createdAt },
+    // newest first. Device-local — a study journal grows unbounded and would
+    // blow chrome.storage.sync's per-item / total quotas.
+    getLog() {
+      return get(local, KEYS.log, []);
+    },
+    saveLog(entries) {
+      return set(local, KEYS.log, Array.isArray(entries) ? entries : []);
+    },
+    async addLogEntry(entry) {
+      const log = await this.getLog();
+      log.unshift(entry);
+      await this.saveLog(log);
+      return entry;
+    },
+    async deleteLogEntry(id) {
+      const log = await this.getLog();
+      await this.saveLog(log.filter((e) => e && e.id !== id));
     },
   };
 })();

@@ -20,9 +20,20 @@
     adPlaybackRate: 16, // speed to burn through unskippable ads
     overlayEnabled: true, // show the overlay during ads
     dismissNuisances: true, // close banner ads + "continue watching" dialog
+    sponsorBlockEnabled: true, // skip in-video sponsor segments (SponsorBlock)
+    sponsorBlockCategories: [
+      "sponsor",
+      "selfpromo",
+      "interaction",
+      "intro",
+      "outro",
+      "music_offtopic",
+    ],
     debug: false, // log capture/restore to the console
 
     // internal tuning:
+    sponsorBlockApiBase: "https://sponsor.ajay.app/api/",
+    sponsorBlockMinSeconds: 1, // ignore sub-second segments (not worth a seek)
     pollIntervalMs: 300, // sensor poll (redundant with MutationObserver)
     debounceMs: 50, // ad-showing flip debounce
     skipRetryMs: 250, // how often to retry Skip + seek-to-end during an ad
@@ -58,6 +69,8 @@
     "adPlaybackRate",
     "overlayEnabled",
     "dismissNuisances",
+    "sponsorBlockEnabled",
+    "sponsorBlockCategories",
     "debug",
   ];
 
@@ -75,6 +88,7 @@
   let actuators = null;
   let controller = null;
   let sensor = null;
+  let sponsorBlock = null;
   let attached = false;
 
   function ensureWiring() {
@@ -88,6 +102,15 @@
         onAdEnd: () => controller.handleAdEnd(),
       });
     }
+    if (!sponsorBlock) sponsorBlock = NS.createSponsorBlock(CONFIG, getVideo);
+  }
+
+  // SponsorBlock follows the master toggle AND its own toggle. Re-load segments
+  // for the current video, or tear down if disabled.
+  function applySponsorBlock() {
+    if (!sponsorBlock) return;
+    if (CONFIG.enabled && CONFIG.sponsorBlockEnabled) sponsorBlock.load(location.href);
+    else sponsorBlock.clear();
   }
 
   // Wait for #movie_player to exist. Resolves with the element, or null after
@@ -121,6 +144,7 @@
     sensor.attach(player); // attach() detaches any prior binding first
     attached = true;
     applyNuisanceWatch();
+    applySponsorBlock();
   }
 
   function applyNuisanceWatch() {
@@ -134,6 +158,7 @@
   async function reInit() {
     if (controller) controller.reset();
     if (sensor) sensor.detach();
+    if (sponsorBlock) sponsorBlock.clear(); // segments are per-video
     attached = false;
     await attachToCurrentPlayer();
   }
@@ -147,6 +172,7 @@
       if (controller) controller.reset();
       if (sensor) sensor.detach();
       if (actuators) actuators.stopNuisanceWatch();
+      if (sponsorBlock) sponsorBlock.clear();
       attached = false;
     }
   }
@@ -171,6 +197,7 @@
       if (Object.prototype.hasOwnProperty.call(next, k)) CONFIG[k] = next[k];
     }
     applyEnabled();
+    applySponsorBlock(); // pick up SponsorBlock enable/category changes live
   });
 
   // --- on-demand panel (keyboard command via background, or popup button) ----

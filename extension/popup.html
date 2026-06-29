@@ -111,6 +111,23 @@
         height: 14px;
         margin-top: 4px;
       }
+      .sb-cats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 4px 12px;
+        margin-top: 6px;
+      }
+      .sb-cats label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: #c9c9d6;
+      }
+      .sb-cats input[type="checkbox"] {
+        width: 15px;
+        height: 15px;
+      }
     </style>
   </head>
   <body>
@@ -148,6 +165,27 @@
     <div class="row">
       <label for="debug">Debug logging</label>
       <input type="checkbox" id="debug" />
+    </div>
+
+    <hr />
+
+    <p class="section-title">SponsorBlock</p>
+    <div class="row">
+      <label for="sponsorBlockEnabled"
+        >Skip in-video sponsor segments
+        <span class="hint">community-sourced sponsor reads, intros, etc.</span></label
+      >
+      <input type="checkbox" id="sponsorBlockEnabled" />
+    </div>
+    <div class="sb-cats">
+      <label><input type="checkbox" id="sb_sponsor" /> Sponsor</label>
+      <label><input type="checkbox" id="sb_selfpromo" /> Self-promo / merch</label>
+      <label><input type="checkbox" id="sb_interaction" /> Interaction reminder</label>
+      <label><input type="checkbox" id="sb_intro" /> Intro / intermission</label>
+      <label><input type="checkbox" id="sb_outro" /> Outro / endcards</label>
+      <label><input type="checkbox" id="sb_music_offtopic" /> Non-music</label>
+      <label><input type="checkbox" id="sb_preview" /> Preview / recap</label>
+      <label><input type="checkbox" id="sb_filler" /> Filler / tangent</label>
     </div>
 
     <hr />

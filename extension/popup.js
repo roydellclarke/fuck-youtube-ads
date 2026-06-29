@@ -11,6 +11,18 @@ const KEYS = {
   stats: "watchfree_stats",
 };
 
+// SponsorBlock categories the popup lets the user toggle (value → label).
+const SB_CATEGORIES = [
+  ["sponsor", "Sponsor"],
+  ["selfpromo", "Self-promo / merch"],
+  ["interaction", "Interaction reminder (like/sub)"],
+  ["intro", "Intro / intermission"],
+  ["outro", "Outro / endcards"],
+  ["music_offtopic", "Non-music (in music videos)"],
+  ["preview", "Preview / recap"],
+  ["filler", "Filler / tangent"],
+];
+
 // Defaults mirror the user-facing subset of CONFIG in content.js.
 const DEFAULT_SETTINGS = {
   enabled: true,
@@ -18,6 +30,15 @@ const DEFAULT_SETTINGS = {
   adPlaybackRate: 16,
   overlayEnabled: true,
   dismissNuisances: true,
+  sponsorBlockEnabled: true,
+  sponsorBlockCategories: [
+    "sponsor",
+    "selfpromo",
+    "interaction",
+    "intro",
+    "outro",
+    "music_offtopic",
+  ],
   debug: false,
 };
 
@@ -26,6 +47,7 @@ const BOOL_FIELDS = [
   "muteDuringAd",
   "overlayEnabled",
   "dismissNuisances",
+  "sponsorBlockEnabled",
   "debug",
 ];
 
@@ -58,6 +80,13 @@ async function load() {
   $("adPlaybackRate").value = settings.adPlaybackRate;
   $("quotes").value = (got[KEYS.quotes] || []).join("\n");
 
+  // SponsorBlock category checkboxes reflect the saved set.
+  const active = new Set(settings.sponsorBlockCategories || []);
+  for (const [cat] of SB_CATEGORIES) {
+    const el = $("sb_" + cat);
+    if (el) el.checked = active.has(cat);
+  }
+
   const localGot = await chrome.storage.local.get({
     [KEYS.stats]: { count: 0, secondsSaved: 0 },
   });
@@ -77,6 +106,18 @@ function bind() {
   for (const f of BOOL_FIELDS) {
     $(f).addEventListener("change", (e) => {
       settings[f] = e.target.checked;
+      saveSettings();
+    });
+  }
+
+  // SponsorBlock categories: any change rebuilds the array from the checkboxes.
+  for (const [cat] of SB_CATEGORIES) {
+    const el = $("sb_" + cat);
+    if (!el) continue;
+    el.addEventListener("change", () => {
+      settings.sponsorBlockCategories = SB_CATEGORIES.map(([c]) => c).filter(
+        (c) => $("sb_" + c) && $("sb_" + c).checked
+      );
       saveSettings();
     });
   }

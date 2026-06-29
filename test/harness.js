@@ -69,7 +69,14 @@ global.document = {
 };
 
 // ---- load the real modules -------------------------------------------------
-for (const f of ["storage.js", "sensor.js", "actuators.js", "controller.js"]) {
+for (const f of [
+  "storage.js",
+  "statsutil.js",
+  "sensor.js",
+  "actuators.js",
+  "controller.js",
+  "sponsorblock.js",
+]) {
   const code = fs.readFileSync(path.join(EXT, f), "utf8");
   eval(code); // IIFEs attach to global.window.WatchFree
 }
@@ -296,6 +303,113 @@ function setup(video) {
     await NS.storage.saveQuotes(["a", "b"]);
     ok("quotes persist + read back (sync)", (await NS.storage.getQuotes()).length === 2);
     ok("defaults when empty", Array.isArray(await NS.storage.getTodos()));
+  }
+
+  // J. statsutil — daily buckets, series, streaks (pure date math).
+  console.log("\nJ. statsutil — daily buckets / series / streak");
+  {
+    const U = NS.statsUtil;
+    ok("dateKey is local YYYY-MM-DD", U.dateKey(new Date(2026, 5, 29)) === "2026-06-29");
+
+    const st = {};
+    U.bumpDaily(st, "2026-06-29", { adCount: 1, adSeconds: 30 });
+    U.bumpDaily(st, "2026-06-29", { adCount: 2, sponsorSeconds: 10 });
+    ok("bumpDaily accumulates same key", st.daily["2026-06-29"].adCount === 3);
+    ok("bumpDaily keeps independent counters", st.daily["2026-06-29"].adSeconds === 30 && st.daily["2026-06-29"].sponsorSeconds === 10);
+
+    const keys = U.lastNDays(new Date(2026, 5, 29), 3);
+    ok("lastNDays length + ordering", keys.length === 3 && keys[2] === "2026-06-29" && keys[0] === "2026-06-27");
+    const series = U.buildDailySeries(st, keys);
+    ok("buildDailySeries fills zeros", series[0].adCount === 0 && series[2].adCount === 3);
+
+    // streak: today + yesterday active, gap before → streak 2.
+    const sk = { daily: {} };
+    U.bumpDaily(sk, "2026-06-29", { adCount: 1 });
+    U.bumpDaily(sk, "2026-06-28", { focusMinutes: 25 });
+    ok("streak counts consecutive active days", U.computeStreak(sk, new Date(2026, 5, 29)) === 2);
+    // grace: today inactive but yesterday active → still counts.
+    ok("streak grace when today idle", U.computeStreak(sk, new Date(2026, 5, 30)) === 2);
+    // broken: two idle days → 0.
+    ok("streak breaks after a gap", U.computeStreak(sk, new Date(2026, 6, 2)) === 0);
+  }
+
+  // K. SponsorBlock — pure helpers + runtime auto-skip.
+  console.log("\nK. SponsorBlock — parse + auto-skip in-video segments");
+  {
+    const SB = NS.sponsorBlockUtil;
+    ok("videoIdFromUrl: watch?v=", SB.videoIdFromUrl("https://www.youtube.com/watch?v=abc123&t=5s") === "abc123");
+    ok("videoIdFromUrl: youtu.be", SB.videoIdFromUrl("https://youtu.be/xyz789") === "xyz789");
+    ok("videoIdFromUrl: shorts", SB.videoIdFromUrl("https://www.youtube.com/shorts/short01") === "short01");
+    ok("videoIdFromUrl: none", SB.videoIdFromUrl("https://www.youtube.com/feed/subscriptions") === null);
+
+    const api = [
+      { videoID: "abc123", segments: [
+        { segment: [60, 90], category: "sponsor", actionType: "skip", UUID: "u1" },
+        { segment: [4, 10], category: "intro", actionType: "skip", UUID: "u2" },
+        { segment: [12, 12.4], category: "sponsor", actionType: "skip", UUID: "u3" }, // too short
+        { segment: [20, 25], category: "music_offtopic", actionType: "skip", UUID: "u4" }, // wrong cat
+        { segment: [30, 40], category: "sponsor", actionType: "full", UUID: "u5" }, // not a skip
+      ] },
+      { videoID: "other", segments: [{ segment: [0, 5], category: "sponsor", actionType: "skip", UUID: "x" }] },
+    ];
+    const segs = SB.normalizeSegments(api, "abc123", { categories: ["sponsor", "intro"], minSeconds: 1 });
+    ok("normalize filters cat/len/actionType/videoID", segs.length === 2);
+    ok("normalize sorts by start", segs[0].start === 4 && segs[1].start === 60);
+
+    const skipped = new Set();
+    ok("pickSkip outside → null", SB.pickSkip(segs, 50, skipped) === null);
+    const hit = SB.pickSkip(segs, 5, skipped);
+    ok("pickSkip inside → segment", hit && hit.end === 10);
+    skipped.add(hit.uuid);
+    ok("pickSkip respects skipped set", SB.pickSkip(segs, 5, skipped) === null);
+
+    // Runtime: fake <video> with timeupdate listeners + injected fetch/hash.
+    const v = {
+      currentTime: 0,
+      _l: {},
+      addEventListener(ev, fn) { this._l[ev] = fn; },
+      removeEventListener(ev, fn) { if (this._l[ev] === fn) delete this._l[ev]; },
+      fire() { if (this._l.timeupdate) this._l.timeupdate(); },
+    };
+    const sbConfig = {
+      sponsorBlockEnabled: true,
+      sponsorBlockCategories: ["sponsor", "intro"],
+      sponsorBlockMinSeconds: 1,
+    };
+    const sb = NS.createSponsorBlock(sbConfig, () => v, {
+      fetchJson: async () => api,
+      sha256Hex: async () => "abcd0000",
+    });
+    const beforeSponsor = (await NS.storage.getStats()).sponsorCount || 0;
+    await sb.load("https://www.youtube.com/watch?v=abc123");
+    ok("runtime loaded our 2 segments", sb._getSegments().length === 2);
+    v.currentTime = 5;
+    v.fire();
+    ok("auto-skipped to segment end", v.currentTime === 10);
+    v.currentTime = 10;
+    v.fire();
+    ok("does not re-skip same segment", v.currentTime === 10);
+    await sleep(5);
+    const afterSponsor = (await NS.storage.getStats()).sponsorCount || 0;
+    ok("sponsor skip recorded in stats", afterSponsor === beforeSponsor + 1);
+
+    sb.clear();
+    ok("clear removes timeupdate listener", !v._l.timeupdate);
+
+    // Disabled → no load.
+    const sb2 = NS.createSponsorBlock({ sponsorBlockEnabled: false }, () => v, {
+      fetchJson: async () => api,
+      sha256Hex: async () => "abcd0000",
+    });
+    await sb2.load("https://www.youtube.com/watch?v=abc123");
+    ok("disabled SponsorBlock loads nothing", sb2._getSegments().length === 0);
+  }
+
+  // L. getStats merges the full default shape over old/empty blobs.
+  console.log("\nL. getStats — full shape with defaults");
+  {
+    const s = await NS.storage.getStats();
+    ok("has sponsor + focus + daily fields", "sponsorCount" in s && "focusMinutes" in s && typeof s.daily === "object");
   }
 
   if (current) current.sensor.detach();

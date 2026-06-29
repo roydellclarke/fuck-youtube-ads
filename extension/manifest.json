@@ -1,10 +1,10 @@
 {
   "manifest_version": 3,
   "name": "WatchFree — client-side ad handler + productivity overlay",
-  "version": "0.2.0",
-  "description": "Detects client-side-inserted YouTube ads, skips/mutes+speeds through them, and shows a productivity overlay (todos + notes + motivational quotes) for the ad's duration.",
+  "version": "0.3.0",
+  "description": "Skips client-side YouTube ads and in-video SponsorBlock segments, shows a focus overlay (centered quote + notes), a timestamped learning log, focus sessions, and a stats dashboard.",
   "permissions": ["storage"],
-  "host_permissions": ["*://*.youtube.com/*"],
+  "host_permissions": ["*://*.youtube.com/*", "https://sponsor.ajay.app/*"],
   "action": {
     "default_popup": "popup.html",
     "default_title": "WatchFree settings"
@@ -26,10 +26,12 @@
       "matches": ["*://*.youtube.com/*"],
       "js": [
         "storage.js",
+        "statsutil.js",
         "overlay.js",
         "sensor.js",
         "actuators.js",
         "controller.js",
+        "sponsorblock.js",
         "content.js"
       ],
       "run_at": "document_idle",
