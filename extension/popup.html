@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      body {
+        width: 320px;
+        margin: 0;
+        padding: 14px 16px 16px;
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+        background: #15151c;
+        color: #f1f1f1;
+        font-size: 14px;
+      }
+      h1 {
+        font-size: 16px;
+        margin: 0 0 2px;
+      }
+      .sub {
+        font-size: 12px;
+        color: #9a9aa8;
+        margin: 0 0 12px;
+      }
+      .stats {
+        background: #1d1d27;
+        border: 1px solid #2c2c38;
+        border-radius: 8px;
+        padding: 8px 10px;
+        font-size: 13px;
+        color: #9aa6ff;
+        margin-bottom: 12px;
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 7px 0;
+      }
+      .row label {
+        flex: 1;
+      }
+      .hint {
+        display: block;
+        font-size: 11px;
+        color: #6f6f7e;
+      }
+      input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        accent-color: #5b6cff;
+      }
+      input[type="number"] {
+        width: 64px;
+        background: #0f0f15;
+        border: 1px solid #313140;
+        border-radius: 6px;
+        color: #f1f1f1;
+        padding: 5px 7px;
+        font-size: 13px;
+      }
+      hr {
+        border: none;
+        border-top: 1px solid #2c2c38;
+        margin: 12px 0;
+      }
+      .section-title {
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #b6b6c4;
+        margin: 0 0 6px;
+      }
+      textarea {
+        width: 100%;
+        min-height: 90px;
+        resize: vertical;
+        background: #0f0f15;
+        border: 1px solid #313140;
+        border-radius: 8px;
+        color: #f1f1f1;
+        padding: 8px;
+        font-size: 13px;
+        font-family: inherit;
+        outline: none;
+      }
+      textarea:focus {
+        border-color: #5b6cff;
+      }
+      button.action {
+        width: 100%;
+        margin-top: 10px;
+        background: #5b6cff;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        padding: 9px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      button.action:hover {
+        background: #4a5ae8;
+      }
+      .saved {
+        font-size: 11px;
+        color: #4ccf7e;
+        height: 14px;
+        margin-top: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>blockYT</h1>
+    <p class="sub">Settings apply instantly to open YouTube tabs.</p>
+
+    <div class="stats" id="stats">No ads handled yet.</div>
+
+    <div class="row">
+      <label for="enabled">Enabled</label>
+      <input type="checkbox" id="enabled" />
+    </div>
+    <div class="row">
+      <label for="muteDuringAd">Mute during ads</label>
+      <input type="checkbox" id="muteDuringAd" />
+    </div>
+    <div class="row">
+      <label for="overlayEnabled">Show overlay during ads</label>
+      <input type="checkbox" id="overlayEnabled" />
+    </div>
+    <div class="row">
+      <label for="dismissNuisances"
+        >Dismiss banner ads & dialogs
+        <span class="hint">closes overlay ads + "continue watching"</span></label
+      >
+      <input type="checkbox" id="dismissNuisances" />
+    </div>
+    <div class="row">
+      <label for="adPlaybackRate"
+        >Ad playback speed
+        <span class="hint">how fast to burn through unskippable ads</span></label
+      >
+      <input type="number" id="adPlaybackRate" min="1" max="16" step="1" />
+    </div>
+    <div class="row">
+      <label for="debug">Debug logging</label>
+      <input type="checkbox" id="debug" />
+    </div>
+
+    <hr />
+
+    <p class="section-title">Motivational quotes</p>
+    <p class="hint" style="margin: 0 0 6px">
+      One per line. Leave empty to use the built-in quotes.
+    </p>
+    <textarea id="quotes" placeholder="Your own quote…"></textarea>
+
+    <button class="action" id="openPanel" type="button">
+      Open productivity panel (⌘/Ctrl+Shift+Y)
+    </button>
+    <div class="saved" id="saved"></div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

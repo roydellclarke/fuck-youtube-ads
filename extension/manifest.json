@@ -1,0 +1,45 @@
+{
+  "manifest_version": 3,
+  "name": "blockYT — client-side ad handler + productivity overlay",
+  "version": "0.2.0",
+  "description": "Detects client-side-inserted YouTube ads, skips/mutes+speeds through them, and shows a productivity overlay (todos + notes + motivational quotes) for the ad's duration.",
+  "permissions": ["storage"],
+  "host_permissions": ["*://*.youtube.com/*"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "blockYT settings"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "commands": {
+    "toggle-panel": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+Y",
+        "mac": "Command+Shift+Y"
+      },
+      "description": "Open/close the blockYT productivity panel"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.youtube.com/*"],
+      "js": [
+        "storage.js",
+        "overlay.js",
+        "sensor.js",
+        "actuators.js",
+        "controller.js",
+        "content.js"
+      ],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["styles.css"],
+      "matches": ["*://*.youtube.com/*"]
+    }
+  ]
+}

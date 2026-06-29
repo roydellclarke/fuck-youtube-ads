@@ -1,0 +1,6 @@
+# gstack / Claude Code tooling artifacts (not part of the extension)
+.gstack/
+.claude/
+
+# OS cruft
+.DS_Store

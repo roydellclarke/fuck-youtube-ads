@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>blockYT simulator</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        margin: 0;
+        background: #f4f4f7;
+        color: #1a1a1a;
+      }
+      .wrap {
+        max-width: 760px;
+        margin: 24px auto;
+        padding: 0 16px;
+      }
+      h1 {
+        font-size: 18px;
+      }
+      .note {
+        font-size: 13px;
+        color: #555;
+        line-height: 1.5;
+      }
+      #movie_player {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        background: #000;
+        border-radius: 8px;
+        overflow: hidden;
+        margin: 16px 0;
+      }
+      #movie_player .fake-content {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #888;
+        font-size: 20px;
+      }
+      .controls {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 12px;
+      }
+      button {
+        padding: 8px 12px;
+        border: 1px solid #cfcfda;
+        border-radius: 8px;
+        background: #fff;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      button:hover {
+        border-color: #5b6cff;
+      }
+      .pre {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        margin-bottom: 12px;
+        font-size: 14px;
+      }
+      .status {
+        font-family: ui-monospace, monospace;
+        font-size: 13px;
+        background: #fff;
+        border: 1px solid #e2e2ec;
+        border-radius: 8px;
+        padding: 12px;
+        white-space: pre;
+      }
+    </style>
+
+    <!-- Shim the extension APIs the content scripts rely on, BEFORE loading them.
+         chrome.storage.{sync,local} -> in-memory (with onChanged firing on set);
+         chrome.runtime.getURL -> http path; chrome.runtime.onMessage -> dispatch
+         via window.__sendMessage(). -->
+    <script>
+      (function () {
+        const listeners = { changed: [], message: [] };
+        function makeArea(areaName) {
+          const mem = {};
+          return {
+            get(def) {
+              const out = {};
+              for (const k in def) out[k] = k in mem ? mem[k] : def[k];
+              return Promise.resolve(out);
+            },
+            set(obj) {
+              const changes = {};
+              for (const k in obj) {
+                changes[k] = { oldValue: mem[k], newValue: obj[k] };
+                mem[k] = obj[k];
+              }
+              listeners.changed.forEach((fn) => fn(changes, areaName));
+              return Promise.resolve();
+            },
+          };
+        }
+        window.chrome = {
+          storage: {
+            sync: makeArea("sync"),
+            local: makeArea("local"),
+            onChanged: { addListener: (fn) => listeners.changed.push(fn) },
+          },
+          runtime: {
+            getURL: (p) => "/extension/" + p,
+            onMessage: { addListener: (fn) => listeners.message.push(fn) },
+          },
+        };
+        window.__sendMessage = (msg) =>
+          listeners.message.forEach((fn) => fn(msg));
+      })();
+    </script>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>blockYT simulator</h1>
+      <p class="note">
+        Loads the real content scripts against a fake <code>#movie_player</code>.
+        Toggling the <code>ad-showing</code> class drives the real
+        Sensor&nbsp;→&nbsp;Controller&nbsp;→&nbsp;Actuators&nbsp;→&nbsp;Overlay
+        pipeline (real Shadow DOM + <code>styles.css</code>).
+      </p>
+
+      <div class="pre">
+        <label
+          ><input type="checkbox" id="preMute" /> start muted (user state)</label
+        >
+        <label
+          >prior speed
+          <input
+            id="preRate"
+            type="number"
+            value="1"
+            step="0.25"
+            min="0.25"
+            style="width: 64px"
+        /></label>
+        <button id="applyPre">apply to video</button>
+      </div>
+
+      <div class="controls">
+        <button id="adUnskip">▶ Start ad (unskippable)</button>
+        <button id="adSkip">▶ Start ad (skippable)</button>
+        <button id="adEnd">■ End ad</button>
+        <button id="togglePanel">⌘ Toggle panel (on demand)</button>
+      </div>
+
+      <div id="movie_player">
+        <div class="fake-content">[ fake video content ]</div>
+        <video id="vid"></video>
+      </div>
+
+      <div class="status" id="status">status…</div>
+    </div>
+
+    <!-- The REAL extension files, in manifest order. -->
+    <script src="/extension/storage.js"></script>
+    <script src="/extension/overlay.js"></script>
+    <script src="/extension/sensor.js"></script>
+    <script src="/extension/actuators.js"></script>
+    <script src="/extension/controller.js"></script>
+    <script src="/extension/content.js"></script>
+
+    <!-- Simulator controls -->
+    <script>
+      const player = document.getElementById("movie_player");
+      const video = document.getElementById("vid");
+      let skipBtn = null;
+
+      // Mimic YouTube's player API so actuators exercise the real mute path.
+      player.isMuted = () => video.muted;
+      player.mute = () => {
+        video.muted = true;
+      };
+      player.unMute = () => {
+        video.muted = false;
+      };
+
+      function clearSkip() {
+        if (skipBtn) {
+          skipBtn.remove();
+          skipBtn = null;
+        }
+      }
+
+      document.getElementById("applyPre").onclick = () => {
+        video.muted = document.getElementById("preMute").checked;
+        video.playbackRate =
+          parseFloat(document.getElementById("preRate").value) || 1;
+      };
+
+      document.getElementById("adUnskip").onclick = () => {
+        clearSkip();
+        player.classList.add("ad-showing");
+      };
+
+      document.getElementById("adSkip").onclick = () => {
+        clearSkip();
+        skipBtn = document.createElement("button");
+        skipBtn.className = "ytp-ad-skip-button-modern";
+        skipBtn.style.position = "absolute";
+        skipBtn.style.right = "12px";
+        skipBtn.style.bottom = "12px";
+        skipBtn.style.zIndex = "2147483647";
+        skipBtn.textContent = "Skip";
+        skipBtn.addEventListener("click", () => {
+          clearSkip();
+          player.classList.remove("ad-showing");
+        });
+        player.appendChild(skipBtn);
+        player.classList.add("ad-showing");
+      };
+
+      document.getElementById("adEnd").onclick = () => {
+        clearSkip();
+        player.classList.remove("ad-showing");
+      };
+
+      // On-demand panel: same message the background worker / popup send.
+      document.getElementById("togglePanel").onclick = () => {
+        window.__sendMessage({ type: "blockyt-toggle-panel" });
+      };
+
+      setInterval(() => {
+        const overlayMounted = !!document.getElementById("blockyt-overlay-host");
+        document.getElementById("status").textContent = [
+          "ad-showing class : " + player.classList.contains("ad-showing"),
+          "video.muted      : " + video.muted,
+          "video.playbackRate: " + video.playbackRate,
+          "overlay mounted  : " + overlayMounted,
+          "skip button       : " + (skipBtn ? "present" : "none"),
+        ].join("\n");
+      }, 150);
+    </script>
+  </body>
+</html>
