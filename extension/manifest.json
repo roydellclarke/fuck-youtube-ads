@@ -19,6 +19,13 @@
         "mac": "Command+Shift+Y"
       },
       "description": "Open/close the WatchFree productivity panel"
+    },
+    "capture-note": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+K",
+        "mac": "Command+Shift+K"
+      },
+      "description": "Capture a timestamped note to the learning log"
     }
   },
   "content_scripts": [
@@ -32,6 +39,7 @@
         "actuators.js",
         "controller.js",
         "sponsorblock.js",
+        "learninglog.js",
         "content.js"
       ],
       "run_at": "document_idle",

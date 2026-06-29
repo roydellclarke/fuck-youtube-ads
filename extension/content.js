@@ -89,6 +89,7 @@
   let controller = null;
   let sensor = null;
   let sponsorBlock = null;
+  let learningLog = null;
   let attached = false;
 
   function ensureWiring() {
@@ -103,6 +104,7 @@
       });
     }
     if (!sponsorBlock) sponsorBlock = NS.createSponsorBlock(CONFIG, getVideo);
+    if (!learningLog) learningLog = NS.createLearningLog(CONFIG, getVideo);
   }
 
   // SponsorBlock follows the master toggle AND its own toggle. Re-load segments
@@ -208,7 +210,11 @@
   }
 
   chrome.runtime.onMessage.addListener((msg) => {
-    if (msg && msg.type === "watchfree-toggle-panel") togglePanel();
+    if (!msg) return;
+    if (msg.type === "watchfree-toggle-panel") togglePanel();
+    else if (msg.type === "watchfree-capture-note" && learningLog) {
+      learningLog.promptCapture();
+    }
   });
 
   // --- SPA navigation handling ----------------------------------------------

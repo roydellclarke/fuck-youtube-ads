@@ -19,5 +19,7 @@ function sendToActiveTab(message) {
 chrome.commands.onCommand.addListener((command) => {
   if (command === "toggle-panel") {
     sendToActiveTab({ type: "watchfree-toggle-panel" });
+  } else if (command === "capture-note") {
+    sendToActiveTab({ type: "watchfree-capture-note" });
   }
 });

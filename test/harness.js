@@ -76,6 +76,7 @@ for (const f of [
   "actuators.js",
   "controller.js",
   "sponsorblock.js",
+  "learninglog.js",
 ]) {
   const code = fs.readFileSync(path.join(EXT, f), "utf8");
   eval(code); // IIFEs attach to global.window.WatchFree
@@ -410,6 +411,49 @@ function setup(video) {
   {
     const s = await NS.storage.getStats();
     ok("has sponsor + focus + daily fields", "sponsorCount" in s && "focusMinutes" in s && typeof s.daily === "object");
+  }
+
+  // M. Learning log — format / jump URL / search / Markdown export + capture.
+  console.log("\nM. Learning log — format, search, export, capture");
+  {
+    const L = NS.logUtil;
+    ok("formatTimestamp m:ss", L.formatTimestamp(75) === "1:15");
+    ok("formatTimestamp h:mm:ss", L.formatTimestamp(3725) === "1:02:05");
+    ok("formatTimestamp pads seconds", L.formatTimestamp(5) === "0:05");
+    ok("jumpUrl from videoId+t", L.jumpUrl({ videoId: "abc", t: 75 }) === "https://www.youtube.com/watch?v=abc&t=75s");
+
+    const entries = [
+      { id: "1", videoId: "v1", title: "Rust basics", t: 120, note: "ownership rules" },
+      { id: "2", videoId: "v1", title: "Rust basics", t: 30, note: "what is a crate" },
+      { id: "3", videoId: "v2", title: "SQL joins", t: 10, note: "left vs inner" },
+    ];
+    ok("search matches note text", L.search(entries, "ownership").length === 1);
+    ok("search matches title", L.search(entries, "sql").length === 1);
+    ok("search empty → all", L.search(entries, "").length === 3);
+
+    const md = L.exportMarkdown(entries);
+    ok("export groups by video", (md.match(/^## /gm) || []).length === 2);
+    ok("export sorts within group by time", md.indexOf("0:30") < md.indexOf("2:00"));
+    ok("export links use jump URL", md.includes("watch?v=v1&t=120s"));
+    ok("export handles empty", L.exportMarkdown([]).includes("No entries yet"));
+
+    // capture(): builds entry from injected meta + video time, persists it.
+    const ll = NS.createLearningLog(
+      {},
+      () => ({ currentTime: 90 }),
+      {
+        getMeta: () => ({ videoId: "vid9", title: "Test vid", url: "https://www.youtube.com/watch?v=vid9" }),
+        now: () => "2026-06-29T00:00:00Z",
+        id: () => "entry-1",
+      }
+    );
+    const before = (await NS.storage.getLog()).length;
+    const saved = await ll.capture("  remember this  ");
+    ok("capture trims + binds timestamp", saved && saved.t === 90 && saved.note === "remember this");
+    ok("capture binds video id", saved.videoId === "vid9");
+    const after = await NS.storage.getLog();
+    ok("capture persists, newest first", after.length === before + 1 && after[0].id === "entry-1");
+    ok("capture ignores empty note", (await ll.capture("   ")) === null);
   }
 
   if (current) current.sensor.detach();
