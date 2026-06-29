@@ -18,6 +18,6 @@ function sendToActiveTab(message) {
 
 chrome.commands.onCommand.addListener((command) => {
   if (command === "toggle-panel") {
-    sendToActiveTab({ type: "blockyt-toggle-panel" });
+    sendToActiveTab({ type: "watchfree-toggle-panel" });
   }
 });

@@ -6,9 +6,9 @@
 "use strict";
 
 const KEYS = {
-  settings: "blockyt_settings",
-  quotes: "blockyt_quotes",
-  stats: "blockyt_stats",
+  settings: "watchfree_settings",
+  quotes: "watchfree_quotes",
+  stats: "watchfree_stats",
 };
 
 // Defaults mirror the user-facing subset of CONFIG in content.js.
@@ -109,7 +109,7 @@ function bind() {
       const tab = tabs && tabs[0];
       if (tab && tab.id != null) {
         chrome.tabs
-          .sendMessage(tab.id, { type: "blockyt-toggle-panel" })
+          .sendMessage(tab.id, { type: "watchfree-toggle-panel" })
           .catch(() => {});
       }
       window.close();

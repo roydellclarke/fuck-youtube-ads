@@ -1,4 +1,4 @@
-// Node test harness for blockYT core logic (sensor + controller + actuators).
+// Node test harness for WatchFree core logic (sensor + controller + actuators).
 // Mocks chrome, document, MutationObserver; loads the REAL IIFE files.
 const fs = require("fs");
 const path = require("path");
@@ -71,9 +71,9 @@ global.document = {
 // ---- load the real modules -------------------------------------------------
 for (const f of ["storage.js", "sensor.js", "actuators.js", "controller.js"]) {
   const code = fs.readFileSync(path.join(EXT, f), "utf8");
-  eval(code); // IIFEs attach to global.window.BlockYT
+  eval(code); // IIFEs attach to global.window.WatchFree
 }
-const NS = window.BlockYT;
+const NS = window.WatchFree;
 
 // ---- helpers ---------------------------------------------------------------
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));

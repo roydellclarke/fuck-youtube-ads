@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>blockYT simulator</title>
+    <title>WatchFree simulator</title>
     <style>
       body {
         font-family: system-ui, sans-serif;
@@ -121,7 +121,7 @@
   </head>
   <body>
     <div class="wrap">
-      <h1>blockYT simulator</h1>
+      <h1>WatchFree simulator</h1>
       <p class="note">
         Loads the real content scripts against a fake <code>#movie_player</code>.
         Toggling the <code>ad-showing</code> class drives the real
@@ -226,11 +226,11 @@
 
       // On-demand panel: same message the background worker / popup send.
       document.getElementById("togglePanel").onclick = () => {
-        window.__sendMessage({ type: "blockyt-toggle-panel" });
+        window.__sendMessage({ type: "watchfree-toggle-panel" });
       };
 
       setInterval(() => {
-        const overlayMounted = !!document.getElementById("blockyt-overlay-host");
+        const overlayMounted = !!document.getElementById("watchfree-overlay-host");
         document.getElementById("status").textContent = [
           "ad-showing class : " + player.classList.contains("ad-showing"),
           "video.muted      : " + video.muted,

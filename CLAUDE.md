@@ -10,7 +10,7 @@ A single Manifest V3 Chrome extension (no build step, no dependencies) that dete
 
 There is no build step — the extension loads as-is.
 
-- **Load / reload:** `chrome://extensions` → Developer mode → **Load unpacked** → select `extension/`. After edits, reload the blockYT card, then reload the YouTube tab. Shortcut config: `chrome://extensions/shortcuts`.
+- **Load / reload:** `chrome://extensions` → Developer mode → **Load unpacked** → select `extension/`. After edits, reload the WatchFree card, then reload the YouTube tab. Shortcut config: `chrome://extensions/shortcuts`.
 - **Logic tests:** `node test/harness.js` — loads the real sensor/controller/actuators/storage with mocked `chrome`/DOM and asserts the ad lifecycle. Exits non-zero on failure. Run after touching those four files.
 - **Real-browser test:** `python3 -m http.server 8731` from the repo root, then open `http://localhost:8731/test/simulator.html`. Drives the full pipeline incl. Shadow DOM + `styles.css` against a faked player. Use after touching `overlay.js`, `styles.css`, or `content.js`.
 - **Syntax check:** `cd extension && python3 -m json.tool manifest.json >/dev/null && for f in storage.js overlay.js sensor.js actuators.js controller.js content.js background.js popup.js; do node --check "$f"; done`
@@ -18,7 +18,7 @@ There is no build step — the extension loads as-is.
 
 ## Architecture
 
-One content script, whole critical loop in-tab. The content-script files (`storage.js`, `overlay.js`, `sensor.js`, `actuators.js`, `controller.js`, `content.js`) load in the order declared in `manifest.json`, into the same isolated world, each hanging its factory off `window.BlockYT`. **Load order matters** — dependencies before dependents (storage → overlay → sensor → actuators → controller → content). `popup.js` and `background.js` run in separate extension contexts (not content scripts) and talk to the page via `chrome.storage` and `chrome.runtime.sendMessage`.
+One content script, whole critical loop in-tab. The content-script files (`storage.js`, `overlay.js`, `sensor.js`, `actuators.js`, `controller.js`, `content.js`) load in the order declared in `manifest.json`, into the same isolated world, each hanging its factory off `window.WatchFree`. **Load order matters** — dependencies before dependents (storage → overlay → sensor → actuators → controller → content). `popup.js` and `background.js` run in separate extension contexts (not content scripts) and talk to the page via `chrome.storage` and `chrome.runtime.sendMessage`.
 
 Data flow: **Sensor** (`ad-showing` class) → **Controller** (`IDLE → AD_ACTIVE → IDLE` + stats) → **Actuators** (skip / mute / speed / overlay / nuisance). `content.js` builds the singletons, holds `CONFIG` (the "Goal"), merges user settings over it, and owns SPA re-init + the panel toggle.
 

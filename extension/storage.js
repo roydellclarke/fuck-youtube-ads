@@ -6,22 +6,22 @@
 // nature, which also keeps them clear of sync's write-rate quota.
 //
 // All content-script files share one isolated-world global scope and load in
-// manifest order. Each file hangs its public surface off a single `BlockYT`
+// manifest order. Each file hangs its public surface off a single `WatchFree`
 // namespace object.
 (function () {
   "use strict";
 
-  const NS = (window.BlockYT = window.BlockYT || {});
+  const NS = (window.WatchFree = window.WatchFree || {});
 
   const sync = chrome.storage.sync;
   const local = chrome.storage.local;
 
   const KEYS = {
-    todos: "blockyt_todos",
-    notes: "blockyt_notes",
-    settings: "blockyt_settings",
-    quotes: "blockyt_quotes",
-    stats: "blockyt_stats",
+    todos: "watchfree_todos",
+    notes: "watchfree_notes",
+    settings: "watchfree_settings",
+    quotes: "watchfree_quotes",
+    stats: "watchfree_stats",
   };
 
   async function get(area, key, fallback) {
@@ -30,7 +30,7 @@
       return result[key];
     } catch (e) {
       // Extension context can be invalidated on reload; fail soft.
-      console.warn("[blockYT] storage.get failed:", e);
+      console.warn("[WatchFree] storage.get failed:", e);
       return fallback;
     }
   }
@@ -39,7 +39,7 @@
     try {
       await area.set({ [key]: value });
     } catch (e) {
-      console.warn("[blockYT] storage.set failed:", e);
+      console.warn("[WatchFree] storage.set failed:", e);
     }
   }
 

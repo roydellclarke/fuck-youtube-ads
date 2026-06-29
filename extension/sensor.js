@@ -10,7 +10,7 @@
 (function () {
   "use strict";
 
-  const NS = (window.BlockYT = window.BlockYT || {});
+  const NS = (window.WatchFree = window.WatchFree || {});
 
   // createSensor(config, handlers)
   //   handlers.onAdStart() — fired once when ad-showing becomes true (stable).
@@ -39,7 +39,7 @@
           if (confirmed) handlers.onAdStart();
           else handlers.onAdEnd();
         } catch (e) {
-          console.error("[blockYT] sensor handler error:", e);
+          console.error("[WatchFree] sensor handler error:", e);
         }
       }, config.debounceMs || 50);
     }
@@ -54,7 +54,7 @@
         try {
           handlers.onAdStart();
         } catch (e) {
-          console.error("[blockYT] sensor onAdStart error:", e);
+          console.error("[WatchFree] sensor onAdStart error:", e);
         }
       }
 

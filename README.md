@@ -1,4 +1,4 @@
-# blockYT
+# WatchFree
 
 A single Manifest V3 Chrome extension that, on `youtube.com`, **detects
 client-side-inserted ads and instantly handles them** — clicks *Skip* the moment
@@ -56,7 +56,7 @@ relays the keyboard command. The module split below organizes the code; it does
 | Shadow-root styles        | `styles.css`    | injected into the shadow root only |
 
 **Transport** between content-script modules is plain function calls via a shared
-namespace (`window.BlockYT`) — trivially fast, no message bus.
+namespace (`window.WatchFree`) — trivially fast, no message bus.
 
 ### Turbulence mitigation (redundancy)
 
@@ -86,7 +86,7 @@ reach the Controller. The Controller distinguishes:
 ## File tree
 
 ```
-blockYT/
+WatchFree/
 ├── README.md
 ├── extension/
 │   ├── manifest.json     # MV3; content script + popup action + background + command
@@ -116,7 +116,7 @@ blockYT/
 4. Select the **`extension/`** folder (the one containing `manifest.json`).
 5. Open or reload a `youtube.com` tab.
 
-To pick up code changes: click the **reload** icon on the blockYT card in
+To pick up code changes: click the **reload** icon on the WatchFree card in
 `chrome://extensions`, then reload the YouTube tab. The keyboard shortcut can be
 customized at `chrome://extensions/shortcuts`.
 
@@ -166,7 +166,7 @@ match — that's the manual checklist below.
    works and the new video is not stuck muted/fast.
 
 Optional: enable **Debug logging** in the popup and filter the console for
-`[blockYT]` to see capture/restore values.
+`[WatchFree]` to see capture/restore values.
 
 ---
 

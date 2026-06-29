@@ -13,7 +13,7 @@
 (function () {
   "use strict";
 
-  const NS = (window.BlockYT = window.BlockYT || {});
+  const NS = (window.WatchFree = window.WatchFree || {});
 
   const STATE = { IDLE: "IDLE", AD_ACTIVE: "AD_ACTIVE" };
 

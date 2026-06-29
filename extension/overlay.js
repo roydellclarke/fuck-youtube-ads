@@ -9,7 +9,7 @@
 (function () {
   "use strict";
 
-  const NS = (window.BlockYT = window.BlockYT || {});
+  const NS = (window.WatchFree = window.WatchFree || {});
 
   // Cache the stylesheet text so we only fetch the packaged file once.
   let cssTextPromise = null;
@@ -21,7 +21,7 @@
         const res = await fetch(url);
         return await res.text();
       } catch (e) {
-        console.warn("[blockYT] could not load styles.css:", e);
+        console.warn("[WatchFree] could not load styles.css:", e);
         return "";
       }
     })();
@@ -115,7 +115,7 @@
 
     function buildUI(opts) {
       const wrap = document.createElement("div");
-      wrap.className = "blockyt-overlay";
+      wrap.className = "watchfree-overlay";
 
       const card = document.createElement("div");
       card.className = "card";
@@ -124,7 +124,7 @@
       header.className = "card-header";
       const title = document.createElement("span");
       title.className = "title";
-      title.textContent = "blockYT";
+      title.textContent = "WatchFree";
       const subtitle = document.createElement("span");
       subtitle.className = "subtitle";
       subtitle.textContent = opts.closable
@@ -272,12 +272,12 @@
       if (host) return; // idempotent — already mounted
       const player = getPlayer && getPlayer();
       if (!player) {
-        console.warn("[blockYT] overlay.mount: no player to mount over");
+        console.warn("[WatchFree] overlay.mount: no player to mount over");
         return;
       }
 
       host = document.createElement("div");
-      host.id = "blockyt-overlay-host";
+      host.id = "watchfree-overlay-host";
       // Cover the player; sit above YouTube's own UI.
       host.style.position = "absolute";
       host.style.inset = "0";

@@ -6,7 +6,7 @@
   all: initial;
 }
 
-.blockyt-overlay {
+.watchfree-overlay {
   position: absolute;
   inset: 0;
   display: flex;
@@ -17,9 +17,9 @@
   box-sizing: border-box;
 }
 
-.blockyt-overlay *,
-.blockyt-overlay *::before,
-.blockyt-overlay *::after {
+.watchfree-overlay *,
+.watchfree-overlay *::before,
+.watchfree-overlay *::after {
   box-sizing: border-box;
 }
 

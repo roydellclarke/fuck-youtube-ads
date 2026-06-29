@@ -7,7 +7,7 @@
 (function () {
   "use strict";
 
-  const NS = (window.BlockYT = window.BlockYT || {});
+  const NS = (window.WatchFree = window.WatchFree || {});
 
   // --- Goal config -----------------------------------------------------------
   // Target state: zero ad exposure, overlay shown during ads. The subset of
@@ -114,7 +114,7 @@
     if (!CONFIG.enabled) return; // disabled → stay detached
     const player = await waitForPlayer();
     if (!player) {
-      console.warn("[blockYT] no #movie_player found; sensor not attached");
+      console.warn("[WatchFree] no #movie_player found; sensor not attached");
       return;
     }
     sensor.attach(player); // attach() detaches any prior binding first
@@ -180,7 +180,7 @@
   }
 
   chrome.runtime.onMessage.addListener((msg) => {
-    if (msg && msg.type === "blockyt-toggle-panel") togglePanel();
+    if (msg && msg.type === "watchfree-toggle-panel") togglePanel();
   });
 
   // --- SPA navigation handling ----------------------------------------------

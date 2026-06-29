@@ -17,7 +17,7 @@
 (function () {
   "use strict";
 
-  const NS = (window.BlockYT = window.BlockYT || {});
+  const NS = (window.WatchFree = window.WatchFree || {});
 
   // createActuators(config, getVideo, getPlayer, overlay)
   //   getVideo  — () => the live <video> element inside the player.
@@ -30,7 +30,7 @@
     let restoreTimers = [];
 
     function log(...args) {
-      if (config.debug) console.log("[blockYT]", ...args);
+      if (config.debug) console.log("[WatchFree]", ...args);
     }
 
     // --- mute via YouTube's player API, falling back to the element ----------
